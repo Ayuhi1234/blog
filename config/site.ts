@@ -7,12 +7,12 @@ export const siteConfig = {
     "I document everything I learn — from software engineering and AI to books, startups, productivity, and everyday life.",
   tagline: "Software, AI, startups, books, and everything in between",
   author: {
-    name: "Your Name",
+    name: "Ayushi Singh",
     handle: "yourname",
     role: "Founder, Engineer & Writer",
     bio: "I build things, read too many books, and write down what I learn along the way. Currently building 0waste — and documenting the whole thing here.",
     avatar: "/authors/avatar.svg",
-    email: "hello@learninginpublic.dev",
+    email: "ayushisingh637011@gmail.com",
     location: "India",
   },
   links: {
