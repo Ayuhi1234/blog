@@ -15,7 +15,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
-export function MobileNav({ writeAvailable = false }: { writeAvailable?: boolean }) {
+export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -55,16 +55,14 @@ export function MobileNav({ writeAvailable = false }: { writeAvailable?: boolean
               </Link>
             );
           })}
-          {writeAvailable && (
-            <Link
-              href="/write"
-              onClick={() => setOpen(false)}
-              className="mt-1 flex items-center gap-2 rounded-lg bg-gradient-to-br from-brand-blue via-brand-purple to-brand-emerald px-3 py-2.5 text-base font-medium text-white"
-            >
-              <PenLine className="size-4" />
-              Write
-            </Link>
-          )}
+          <Link
+            href="/write"
+            onClick={() => setOpen(false)}
+            className="mt-1 flex items-center gap-2 rounded-lg bg-gradient-to-br from-brand-blue via-brand-purple to-brand-emerald px-3 py-2.5 text-base font-medium text-white"
+          >
+            <PenLine className="size-4" />
+            Write
+          </Link>
         </nav>
         <div className="mt-auto flex items-center justify-between border-t border-border px-4 py-4">
           <span className="text-sm text-muted-foreground">Theme</span>

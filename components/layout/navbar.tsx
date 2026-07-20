@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
-export function Navbar({ writeAvailable = false }: { writeAvailable?: boolean }) {
+export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { scrollY } = useScroll();
 
@@ -43,22 +43,20 @@ export function Navbar({ writeAvailable = false }: { writeAvailable?: boolean })
         </div>
 
         <div className="flex items-center gap-2">
-          {writeAvailable && (
-            <Button
-              size="sm"
-              className="hidden rounded-full bg-gradient-to-br from-brand-blue via-brand-purple to-brand-emerald text-white hover:opacity-90 sm:flex"
-              render={<Link href="/write" />}
-            >
-              <PenLine className="size-3.5" />
-              Write
-            </Button>
-          )}
+          <Button
+            size="sm"
+            className="hidden rounded-full bg-gradient-to-br from-brand-blue via-brand-purple to-brand-emerald text-white hover:opacity-90 sm:flex"
+            render={<Link href="/write" />}
+          >
+            <PenLine className="size-3.5" />
+            Write
+          </Button>
           <SearchTrigger compact className="sm:hidden" />
           <SearchTrigger className="hidden sm:flex" />
           <div className="hidden md:block">
             <ThemeToggle />
           </div>
-          <MobileNav writeAvailable={writeAvailable} />
+          <MobileNav />
         </div>
       </div>
     </motion.header>

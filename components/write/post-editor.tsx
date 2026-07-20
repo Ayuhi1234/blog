@@ -36,12 +36,10 @@ export function PostEditor({
   existingSlugs,
   tagSuggestions,
   initialStreak,
-  viaGitHub = false,
 }: {
   existingSlugs: string[];
   tagSuggestions: string[];
   initialStreak: StreakStats;
-  viaGitHub?: boolean;
 }) {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -134,16 +132,12 @@ export function PostEditor({
         <div className="flex flex-col items-center rounded-3xl border border-brand-emerald/30 bg-brand-emerald-soft px-8 py-14 text-center">
           <CheckCircle2 className="size-12 text-brand-emerald" />
           <h1 className="mt-5 text-2xl font-semibold">
-            {viaGitHub ? "Committed to GitHub" : `Saved to content/posts/${result.slug}.mdx`}
+            Saved to content/posts/{result.slug}.mdx
           </h1>
           <p className="mt-2 text-muted-foreground">
-            {viaGitHub
-              ? draft
-                ? "Pushed as a draft — flip draft to false in the file on GitHub when it's ready to publish."
-                : "Vercel is redeploying now — your post will be live in about a minute."
-              : draft
-                ? "Saved as a draft — flip draft to false in the file when it's ready to publish."
-                : "It's written. Commit and push whenever you're ready to ship it."}
+            {draft
+              ? "Saved as a draft — flip draft to false in the file when it's ready to publish."
+              : "It's written. Commit and push whenever you're ready to ship it."}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button render={<Link href={result.url} target="_blank" rel="noreferrer" />}>
@@ -169,14 +163,8 @@ export function PostEditor({
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Write</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {viaGitHub ? (
-              <>Commits straight to GitHub — Vercel redeploys automatically after saving.</>
-            ) : (
-              <>
-                Saves straight to <code className="rounded bg-muted px-1.5 py-0.5">content/posts/</code>.
-                Commit whenever you&apos;re ready to publish.
-              </>
-            )}
+            Saves straight to <code className="rounded bg-muted px-1.5 py-0.5">content/posts/</code>.
+            Commit whenever you&apos;re ready to publish.
           </p>
         </div>
         <Button type="submit" size="lg" className="rounded-full px-6" disabled={status === "saving"}>

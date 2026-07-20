@@ -11,7 +11,6 @@ import { Footer } from "@/components/layout/footer";
 import { ScrollToTop } from "@/components/layout/scroll-to-top";
 import { siteConfig } from "@/config/site";
 import { getSearchIndex } from "@/lib/search";
-import { isWriteAvailable } from "@/lib/write-auth";
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -89,7 +88,6 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const searchIndex = getSearchIndex();
-  const writeAvailable = isWriteAvailable();
 
   return (
     <html
@@ -112,7 +110,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             >
               Skip to content
             </a>
-            <Navbar writeAvailable={writeAvailable} />
+            <Navbar />
             <main id="main-content" className="flex-1">
               {children}
             </main>
