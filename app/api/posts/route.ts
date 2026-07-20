@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { mkdir, writeFile, access } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { CATEGORY_SLUGS } from "@/lib/categories";
 import { localDateString, slugify } from "@/lib/format";
 import { generatePostCoverSvg } from "@/lib/generate-post-cover";
 import { getAllPosts } from "@/lib/content";
 import { computeStreakStats } from "@/lib/streaks";
+import { fileExists } from "@/lib/fs-utils";
 
 function yamlString(value: string) {
   return JSON.stringify(value);
@@ -13,15 +14,6 @@ function yamlString(value: string) {
 
 function yamlStringArray(values: string[]) {
   return `[${values.map((v) => JSON.stringify(v)).join(", ")}]`;
-}
-
-async function fileExists(filePath: string) {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export async function POST(request: Request) {

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { CheckCircle2, ExternalLink, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { CheckCircle2, ExternalLink, ImagePlus, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CATEGORIES } from "@/lib/categories";
 import { slugify } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { StreakStats } from "@/lib/streaks";
 import { StreakPanel } from "@/components/write/streak-panel";
 
@@ -54,6 +55,11 @@ export function PostEditor({
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<{ slug: string; url: string } | null>(null);
   const [streak, setStreak] = useState<StreakStats>(initialStreak);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const effectiveSlug = slugEdited ? slug : slugify(title);
   const slugCollision = existingSlugs.includes(effectiveSlug);
@@ -67,6 +73,69 @@ export function PostEditor({
   function handleTitleChange(value: string) {
     setTitle(value);
     if (!slugEdited) setSlug(slugify(value));
+  }
+
+  function insertAtCursor(insertText: string) {
+    const textarea = contentRef.current;
+    if (!textarea) {
+      setContent((prev) => `${prev}${prev.endsWith("\n") || !prev ? "" : "\n"}${insertText}`);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    setContent((prev) => `${prev.slice(0, start)}${insertText}${prev.slice(end)}`);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const pos = start + insertText.length;
+      textarea.setSelectionRange(pos, pos);
+    });
+  }
+
+  async function uploadImage(file: File) {
+    setUploadError("");
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed.");
+      const alt = file.name.replace(/\.[^.]+$/, "");
+      insertAtCursor(`![${alt}](${data.path})\n`);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function uploadImages(files: FileList | File[]) {
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    for (const file of imageFiles) {
+      await uploadImage(file);
+    }
+  }
+
+  function handleFileInputChange(e: ChangeEvent<HTMLInputElement>) {
+    if (e.target.files?.length) uploadImages(e.target.files);
+    e.target.value = "";
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files?.length) uploadImages(e.dataTransfer.files);
+  }
+
+  function handlePaste(e: ClipboardEvent<HTMLTextAreaElement>) {
+    const files = Array.from(e.clipboardData.items)
+      .filter((item) => item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter((f): f is File => f !== null);
+    if (files.length) {
+      e.preventDefault();
+      uploadImages(files);
+    }
   }
 
   function handleReset() {
@@ -289,18 +358,63 @@ export function PostEditor({
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <div>
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between gap-3">
             <Label htmlFor="post-content">Content (Markdown / MDX)</Label>
-            <span className="text-xs text-muted-foreground">
-              {wordCount} words · {readingTime} min read
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground">
+                {wordCount} words · {readingTime} min read
+              </span>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
+              >
+                {uploading ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="size-3.5" />
+                )}
+                {uploading ? "Uploading…" : "Insert Image"}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                multiple
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+            </div>
           </div>
-          <Textarea
-            id="post-content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="h-[560px] field-sizing-fixed resize-none overflow-y-auto font-mono text-sm leading-relaxed"
-          />
+          {uploadError && <p className="mb-2 text-xs text-destructive">{uploadError}</p>}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragActive(true);
+            }}
+            onDragLeave={() => setDragActive(false)}
+            onDrop={handleDrop}
+            className={cn(
+              "relative rounded-2xl transition-colors",
+              dragActive && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+            )}
+          >
+            <Textarea
+              id="post-content"
+              ref={contentRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onPaste={handlePaste}
+              placeholder="Write here, or drag & drop / paste an image to insert it…"
+              className="h-[560px] field-sizing-fixed resize-none overflow-y-auto font-mono text-sm leading-relaxed"
+            />
+            {dragActive && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl bg-background/80 text-sm font-medium text-primary">
+                Drop image to insert
+              </div>
+            )}
+          </div>
         </div>
         <div>
           <Label className="mb-2 block">Live Preview</Label>
