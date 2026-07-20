@@ -15,7 +15,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
-export function MobileNav() {
+export function MobileNav({ writeAvailable = false }: { writeAvailable?: boolean }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -55,7 +55,7 @@ export function MobileNav() {
               </Link>
             );
           })}
-          {process.env.NODE_ENV === "development" && (
+          {writeAvailable && (
             <Link
               href="/write"
               onClick={() => setOpen(false)}

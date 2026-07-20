@@ -26,6 +26,12 @@ export function isWriteEnabledInProduction() {
   );
 }
 
+/** Whether the /write page is reachable at all right now: always in dev, or in
+ * production once WRITE_PASSWORD/GITHUB_TOKEN/GITHUB_REPO are configured. */
+export function isWriteAvailable() {
+  return process.env.NODE_ENV !== "production" || isWriteEnabledInProduction();
+}
+
 export function checkPassword(password: string) {
   if (!process.env.WRITE_PASSWORD) return false;
   return safeEqual(password, process.env.WRITE_PASSWORD);

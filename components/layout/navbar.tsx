@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
-export function Navbar() {
+export function Navbar({ writeAvailable = false }: { writeAvailable?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const { scrollY } = useScroll();
 
@@ -43,7 +43,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {process.env.NODE_ENV === "development" && (
+          {writeAvailable && (
             <Button
               size="sm"
               className="hidden rounded-full bg-gradient-to-br from-brand-blue via-brand-purple to-brand-emerald text-white hover:opacity-90 sm:flex"
@@ -58,7 +58,7 @@ export function Navbar() {
           <div className="hidden md:block">
             <ThemeToggle />
           </div>
-          <MobileNav />
+          <MobileNav writeAvailable={writeAvailable} />
         </div>
       </div>
     </motion.header>
