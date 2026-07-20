@@ -1,0 +1,56 @@
+---
+title: "The LLM Agent Stack in 2026: What Actually Works"
+description: "After a year of building agents in production, here's the boring, unglamorous stack that actually holds up — and the exciting ideas that still don't."
+date: "2026-06-15"
+category: "artificial-intelligence"
+tags: ["ai", "llm", "agents", "software-engineering"]
+coverImage: "/covers/llm-agent-stack-2026.svg"
+coverImageAlt: "Abstract gradient illustration representing an AI agent stack"
+featured: true
+---
+
+Every few months I rewrite my opinion on what "AI agent" architecture actually deserves to run in production. This is the version that's survived contact with real users the longest, so I'm writing it down before I inevitably revise it again.
+
+## The core loop hasn't changed, and that's the point
+
+Underneath every agent framework's branding, the loop is still: **model reasons → picks a tool → tool executes → result feeds back into context → repeat until done.** Every improvement that's actually mattered has been about making that loop more reliable, not about replacing it with something cleverer.
+
+```python
+while not done:
+    response = model.generate(messages, tools=available_tools)
+    if response.tool_call:
+        result = execute(response.tool_call)
+        messages.append(tool_result(result))
+    else:
+        done = True
+```
+
+If you squint, that's the whole thing. Everything else — planning modules, memory systems, multi-agent orchestration — is scaffolding around this loop to make it fail less often.
+
+## What actually moved the needle
+
+### 1. Narrower tools beat clever tools
+
+Early on I gave agents a `run_python` tool and let them figure out the rest. It worked in demos and fell apart in production — too many degrees of freedom means too many ways to go sideways. Replacing broad tools with 6-8 narrow, single-purpose ones (`search_orders`, `issue_refund`, `check_inventory`) cut our error rate by more than half. Constraint is a feature.
+
+### 2. The context window is a budget, not a buffer
+
+Treating "we have 200k tokens available" as permission to stuff in everything remotely relevant was the single most expensive mistake we made. Retrieval quality matters more than context size. A tight, well-ranked 8k tokens of context consistently outperforms a sloppy 80k.
+
+### 3. Evals are the actual product
+
+<Callout type="tip" title="If you build one thing before you build the agent, build this">
+A labeled set of 50-100 real user transcripts with expected outcomes, scored automatically after every prompt or tool change. Without this, you're not iterating — you're vibes-testing, and vibes-testing doesn't scale past the first three changes.
+</Callout>
+
+We didn't take evals seriously until an agent silently regressed on a category of requests for two weeks because a prompt tweak meant to fix one thing broke another. Nobody noticed until support tickets piled up. That was the last time we shipped a prompt change without running the eval suite first.
+
+## What still doesn't work well
+
+- **Long-horizon planning.** Agents are still much better at "do this multi-step task now" than "maintain a plan across days and adapt it." The illusion of planning mostly comes from re-planning from scratch each turn.
+- **Autonomous multi-agent debate.** Every framework has a version of "spin up three agents to critique each other's work." In our testing, it burns 3x the tokens for output quality gains that are inconsistent at best.
+- **Trusting agents with irreversible actions without a human checkpoint.** Not a technical limitation so much as a design one — but worth saying plainly, because the incentive to remove the checkpoint "for a smoother UX" never fully goes away.
+
+## The unglamorous conclusion
+
+The stack that works is boring: a tight tool set, disciplined context management, and an eval suite you actually run. None of that is a satisfying answer if you were hoping for a framework name. But a year in, "boring and disciplined" has outperformed every clever architecture we tried to replace it with.

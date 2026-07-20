@@ -1,0 +1,84 @@
+---
+title: "A Deep Dive into React Server Components"
+description: "What RSCs actually change about how we build for the web, and where the mental model of 'components that run on the server' starts to break down."
+date: "2026-05-30"
+category: "software-engineering"
+tags: ["nextjs", "react", "software-engineering", "performance"]
+coverImage: "/covers/react-server-components.svg"
+coverImageAlt: "Abstract gradient illustration for React Server Components"
+featured: false
+---
+
+I resisted React Server Components for a long time. Not because I doubted the idea — shipping less JavaScript is obviously good — but because every explanation I read made them sound like magic, and I've learned to distrust anything in a framework that feels like magic. Six months and two production apps later, I finally have a mental model that holds up. This is that model.
+
+## The one-sentence version
+
+A Server Component is a component whose code never ships to the browser. It renders once, on the server, and sends the *result* — not the recipe — down the wire.
+
+That's it. Everything else is a consequence of that one fact.
+
+## Why this matters more than it sounds like it should
+
+For most of React's life, the unit of shipping was the component tree. If your page imported a 40kb date-formatting library to render three timestamps, that library went to every visitor's browser, whether they needed the interactivity or not. Server Components let you draw a line: components that only *render* stay on the server; components that need to *react* to clicks, state, or effects ship to the client.
+
+The practical effect on the apps I've rebuilt with this model:
+
+- Initial JS payload dropped 40-60% on content-heavy pages
+- Data fetching moved from `useEffect` waterfalls to `await` directly in components
+- The client bundle became a much smaller, much more honest list of "things that are actually interactive"
+
+## The mental model that finally clicked
+
+Stop thinking about Server and Client Components as two flavors of the same thing. Think about it as two separate render passes that produce one tree:
+
+```tsx
+// app/posts/[slug]/page.tsx — Server Component (default)
+export default async function PostPage({ params }: { params: { slug: string } }) {
+  const post = await getPost(params.slug); // runs on the server, no API route needed
+
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <LikeButton postId={post.id} /> {/* client island */}
+    </article>
+  );
+}
+```
+
+```tsx
+// components/like-button.tsx — Client Component (opt-in)
+"use client";
+
+import { useState } from "react";
+
+export function LikeButton({ postId }: { postId: string }) {
+  const [liked, setLiked] = useState(false);
+  return <button onClick={() => setLiked(!liked)}>{liked ? "♥" : "♡"}</button>;
+}
+```
+
+The `"use client"` directive isn't marking a component as "runs on the client." It's marking a *boundary* — everything below it in the import tree gets bundled for the browser. Everything above stays put.
+
+<Callout type="tip" title="The rule that saves you the most debugging time">
+Push `"use client"` as far down the tree as possible. Don't mark a whole page client just because one button needs `onClick`. Extract the button.
+</Callout>
+
+## Where it gets genuinely hard
+
+Two things took me longer to internalize than I expected.
+
+### 1. Props crossing the boundary must be serializable
+
+You can pass a Server Component *as a child* into a Client Component (the `children` prop trick), but you can't pass functions, class instances, or Dates-that-need-to-stay-Dates as props across the boundary without thinking about it. The error messages are better than they used to be, but the first time you hit "Functions cannot be passed directly to Client Components," it's disorienting.
+
+### 2. Caching is now a first-class decision, not an afterthought
+
+Server Components fetch on every request by default in the App Router's newer caching model, which is the opposite of what most of us assumed for the first year. If you want the old "cache aggressively" behavior, you opt in explicitly. This is the right long-term default — implicit caching caused more production incidents than it prevented — but it means every data-fetching component now has an implicit question attached to it: *how fresh does this need to be?*
+
+## Was it worth the migration cost?
+
+For this site: yes, unambiguously. The blog listing page went from 180kb of JS to 34kb, and Lighthouse's Total Blocking Time dropped from the 300ms range to under 50ms.
+
+For a dashboard-heavy internal tool I helped migrate at a previous job: less clear. When almost everything on the page is interactive anyway, the "ship less JS" benefit shrinks, and the caching mental model tax is real.
+
+The honest takeaway: RSCs are a phenomenal fit for content sites, marketing pages, and anything read-heavy. For state-heavy, interaction-heavy apps, evaluate carefully before you commit — the migration is not free, and the payoff is not universal.

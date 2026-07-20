@@ -1,0 +1,21 @@
+---
+title: "DevMetrics CLI"
+description: "A terminal dashboard for tracking personal coding metrics across GitHub repos — commit heatmaps, weekly digests, all local-first."
+coverImage: "/projects/devmetrics-cli.svg"
+tech: ["Rust", "SQLite", "Ratatui"]
+github: "https://github.com/yourname/devmetrics-cli"
+status: "in-progress"
+featured: false
+date: "2025-12-10"
+features:
+  - "Local-first, no telemetry, no account required"
+  - "Cross-repo commit heatmaps rendered directly in the terminal"
+  - "Weekly email digest of coding activity"
+  - "Ships as a single static binary"
+---
+
+A side project born from wanting a GitHub-contributions-style heatmap that worked across private repos and self-hosted git servers without sending any data anywhere. Built in Rust mostly as an excuse to get more comfortable with the language.
+
+## Status
+
+Core heatmap rendering and local SQLite indexing work. The weekly digest emailer is half-built — the templating works, the scheduler doesn't yet.

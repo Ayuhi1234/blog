@@ -1,0 +1,26 @@
+---
+title: "Learning in Public"
+description: "This very site — a personal blog engine built from scratch with Next.js, MDX, and zero CMS."
+coverImage: "/projects/learning-in-public.svg"
+tech: ["Next.js", "TypeScript", "Tailwind CSS", "MDX", "Framer Motion"]
+github: "https://github.com/yourname/learning-in-public"
+demo: "https://learninginpublic.dev"
+status: "live"
+featured: true
+date: "2026-07-01"
+features:
+  - "MDX-based content system — every post, book, and project is a file, no database"
+  - "Full-text command palette search with keyboard shortcut"
+  - "Light, dark, and system theming with smooth transitions"
+  - "RSS feed, sitemap, and JSON-LD structured data out of the box"
+---
+
+I wrote about why this exists in more depth [here](/blog/rewrote-blog-three-times). The short version: the third rewrite of this site was built on one rule — content lives in files, not a database — and that rule has made publishing sustainable in a way the previous two versions never were.
+
+## Stack notes
+
+Next.js App Router for static generation and routing, `content-collections` for a typed MDX pipeline, and Tailwind for a design system built around a blue-purple-emerald accent palette instead of the grayscale-plus-one-accent look most templates default to.
+
+## What I'd change
+
+The search index is currently built at request time from all content — fine at this content volume, would need a proper index (or a hosted search service) well before it became a problem at scale.

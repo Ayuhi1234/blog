@@ -1,0 +1,53 @@
+---
+title: "Why I Rewrote My Blog Three Times (And What It Taught Me)"
+description: "Three rewrites, three stacks, one lesson I kept refusing to learn about shipping versus polishing."
+date: "2026-04-02"
+category: "software-engineering"
+tags: ["nextjs", "writing", "software-engineering", "indie-hacking"]
+coverImage: "/covers/rewrote-blog-three-times.svg"
+coverImageAlt: "Abstract gradient illustration about rebuilding a blog"
+featured: false
+---
+
+The first version of this blog took me four days to build and I published on it for two years. The second version took me three months to build and I published on it for six weeks. There is a lesson buried in those two sentences, and it took me a third rewrite to actually learn it.
+
+## Version one: a folder of HTML files
+
+No framework. No build step. Just HTML files, a shared header I copy-pasted into each one, and `scp` to a $5 VPS. It was ugly, it had a comic sans fallback font on one page for reasons I never diagnosed, and I published 40-something posts on it.
+
+It worked because the only thing between "I have a thought" and "the thought is published" was opening a text editor.
+
+## Version two: the trap of the perfect stack
+
+Then I discovered how much *nicer* a real framework could make things, and I fell into the trap that eats most technically-minded people who start blogs: I started building the platform instead of writing on it.
+
+Three months building:
+
+- A custom CMS with a Notion-style block editor
+- A tagging system with weighted relevance scoring
+- An analytics dashboard nobody but me would ever look at
+- A comment system I built from scratch instead of using literally anything that exists
+
+By the time it launched, I'd lost the thread of what I wanted to say in the first place. I published six posts and quietly stopped.
+
+<Callout type="warning" title="The tell you should watch for">
+If you're a developer starting a blog and you find yourself more excited about the *platform* than about any specific post you want to write, that's not a red flag exactly — but it is a countdown timer. Ship the platform fast, or ship it never.
+</Callout>
+
+## Version three: this one
+
+This time the rule was simple: **content lives in files, not a database.** Every post is an MDX file. Adding a post means creating a file and running `git push`. There is no admin panel to log into, no CMS to keep patched, no database to back up.
+
+```
+content/posts/why-i-rewrote-my-blog-three-times.mdx
+```
+
+That's the entire mental overhead of publishing. The framework (Next.js, in this case) handles routing, static generation, and image optimization — the boring, solved problems — so I never have to think about them. The things I *did* spend real time on were the things that actually compound: typography, load speed, and making sure a post written eighteen months from now looks exactly as good as one written today.
+
+## The actual lesson
+
+It's not "don't build tools" — I like building tools, and I'll keep doing it. It's that **the tool and the writing are different projects with different success criteria**, and conflating them is how you end up with an exquisitely engineered blog that has six posts on it.
+
+If you're about to rebuild your own site: ship the boring version first. Publish three posts on it. *Then* decide if you still want the custom block editor.
+
+You probably won't.

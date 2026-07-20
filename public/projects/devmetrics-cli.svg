@@ -1,0 +1,16 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gdevmetrics-cli" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <pattern id="griddevmetrics-cli" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#ffffff" stroke-opacity="0.09" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#gdevmetrics-cli)"/>
+  <rect width="1600" height="1000" fill="url(#griddevmetrics-cli)"/>
+  <circle cx="1300" cy="200" r="220" fill="#ffffff" fill-opacity="0.10"/>
+  <rect x="90" y="810" width="120" height="120" rx="28" fill="#ffffff" fill-opacity="0.16"/>
+  <text x="90" y="760" font-family="Inter, Helvetica, Arial, sans-serif" font-size="52" font-weight="700" fill="#ffffff" letter-spacing="-1">DevMetrics CLI</text>
+</svg>
