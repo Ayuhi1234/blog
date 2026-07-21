@@ -22,7 +22,10 @@ import { CATEGORIES } from "@/lib/categories";
 import { slugify } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { StreakStats } from "@/lib/streaks";
+import type { EditablePost } from "@/lib/content";
 import { StreakPanel } from "@/components/write/streak-panel";
+
+const NEW_POST_VALUE = "__new__";
 
 const DEFAULT_CONTENT = `Start writing here. Standard Markdown works — headings, **bold**, _italics_, lists, > blockquotes, and \`inline code\`.
 
@@ -35,10 +38,12 @@ type Status = "idle" | "saving" | "success" | "error";
 
 export function PostEditor({
   existingSlugs,
+  editablePosts,
   tagSuggestions,
   initialStreak,
 }: {
   existingSlugs: string[];
+  editablePosts: EditablePost[];
   tagSuggestions: string[];
   initialStreak: StreakStats;
 }) {
@@ -58,11 +63,12 @@ export function PostEditor({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const effectiveSlug = slugEdited ? slug : slugify(title);
-  const slugCollision = existingSlugs.includes(effectiveSlug);
+  const slugCollision = !editingSlug && existingSlugs.includes(effectiveSlug);
   const tags = tagsInput
     .split(",")
     .map((t) => t.trim())
@@ -73,6 +79,27 @@ export function PostEditor({
   function handleTitleChange(value: string) {
     setTitle(value);
     if (!slugEdited) setSlug(slugify(value));
+  }
+
+  function loadPost(targetSlug: string) {
+    if (!targetSlug) {
+      handleReset();
+      return;
+    }
+    const post = editablePosts.find((p) => p.slug === targetSlug);
+    if (!post) return;
+    setEditingSlug(post.slug);
+    setTitle(post.title);
+    setSlug(post.slug);
+    setSlugEdited(true);
+    setDescription(post.description);
+    setCategory(post.category);
+    setTagsInput(post.tags.join(", "));
+    setFeatured(post.featured);
+    setDraft(post.draft);
+    setContent(post.content);
+    setStatus("idle");
+    setMessage("");
   }
 
   function insertAtCursor(insertText: string) {
@@ -139,6 +166,7 @@ export function PostEditor({
   }
 
   function handleReset() {
+    setEditingSlug(null);
     setTitle("");
     setSlug("");
     setSlugEdited(false);
@@ -182,6 +210,7 @@ export function PostEditor({
           featured,
           draft,
           slug: effectiveSlug,
+          isEdit: Boolean(editingSlug),
         }),
       });
       const data = await res.json();
@@ -201,12 +230,14 @@ export function PostEditor({
         <div className="flex flex-col items-center rounded-3xl border border-brand-emerald/30 bg-brand-emerald-soft px-8 py-14 text-center">
           <CheckCircle2 className="size-12 text-brand-emerald" />
           <h1 className="mt-5 text-2xl font-semibold">
-            Saved to content/posts/{result.slug}.mdx
+            {editingSlug ? "Updated" : "Saved"} content/posts/{result.slug}.mdx
           </h1>
           <p className="mt-2 text-muted-foreground">
             {draft
               ? "Saved as a draft — flip draft to false in the file when it's ready to publish."
-              : "It's written. Commit and push whenever you're ready to ship it."}
+              : editingSlug
+                ? "Changes written. Commit and push whenever you're ready to ship them."
+                : "It's written. Commit and push whenever you're ready to ship it."}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button render={<Link href={result.url} target="_blank" rel="noreferrer" />}>
@@ -215,7 +246,7 @@ export function PostEditor({
             </Button>
             <Button variant="outline" onClick={handleReset}>
               <RotateCcw className="size-4" />
-              Write Another
+              {editingSlug ? "Edit Another" : "Write Another"}
             </Button>
           </div>
         </div>
@@ -230,10 +261,21 @@ export function PostEditor({
     <form onSubmit={handleSubmit} className="pb-24">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Write</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {editingSlug ? "Edit Post" : "Write"}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Saves straight to <code className="rounded bg-muted px-1.5 py-0.5">content/posts/</code>.
-            Commit whenever you&apos;re ready to publish.
+            {editingSlug ? (
+              <>
+                Editing <code className="rounded bg-muted px-1.5 py-0.5">content/posts/{editingSlug}.mdx</code>.
+                Saving overwrites the file in place.
+              </>
+            ) : (
+              <>
+                Saves straight to <code className="rounded bg-muted px-1.5 py-0.5">content/posts/</code>.
+                Commit whenever you&apos;re ready to publish.
+              </>
+            )}
           </p>
         </div>
         <Button type="submit" size="lg" className="rounded-full px-6" disabled={status === "saving"}>
@@ -245,10 +287,32 @@ export function PostEditor({
           ) : (
             <>
               <Sparkles className="size-4" />
-              Save Post
+              {editingSlug ? "Update Post" : "Save Post"}
             </>
           )}
         </Button>
+      </div>
+
+      <div className="mb-6">
+        <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">
+          Edit an existing post
+        </Label>
+        <Select
+          value={editingSlug ?? NEW_POST_VALUE}
+          onValueChange={(value) => loadPost(value === NEW_POST_VALUE ? "" : (value ?? ""))}
+        >
+          <SelectTrigger className="w-full sm:w-80">
+            <SelectValue placeholder="New post" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NEW_POST_VALUE}>New post</SelectItem>
+            {editablePosts.map((p) => (
+              <SelectItem key={p.slug} value={p.slug}>
+                {p.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="mb-8">
@@ -277,6 +341,7 @@ export function PostEditor({
           <Input
             id="post-slug"
             value={effectiveSlug}
+            disabled={Boolean(editingSlug)}
             onChange={(e) => {
               setSlugEdited(true);
               setSlug(slugify(e.target.value));
@@ -284,6 +349,7 @@ export function PostEditor({
             placeholder="auto-generated"
           />
           {slugCollision && <p className="text-xs text-destructive">Already exists</p>}
+          {editingSlug && <p className="text-xs text-muted-foreground">Locked while editing</p>}
         </div>
         <div className="space-y-2">
           <Label>Category</Label>

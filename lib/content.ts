@@ -4,6 +4,30 @@ export type Post = (typeof allPosts)[number];
 export type Book = (typeof allBooks)[number];
 export type Project = (typeof allProjects)[number];
 
+export type EditablePost = {
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  tags: string[];
+  featured: boolean;
+  draft: boolean;
+  content: string;
+};
+
+export function toEditablePost(post: Post): EditablePost {
+  return {
+    slug: post.slug,
+    title: post.title,
+    description: post.description,
+    category: post.category,
+    tags: [...post.tags],
+    featured: post.featured,
+    draft: post.draft,
+    content: post.content,
+  };
+}
+
 function byDateDesc(a: { date: string }, b: { date: string }) {
   return new Date(b.date).getTime() - new Date(a.date).getTime();
 }

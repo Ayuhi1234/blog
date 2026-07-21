@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     featured = false,
     draft = false,
     slug: slugOverride,
+    isEdit = false,
   } = body as {
     title?: string;
     description?: string;
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
     featured?: boolean;
     draft?: boolean;
     slug?: string;
+    isEdit?: boolean;
   };
 
   if (!title?.trim() || !description?.trim() || !content?.trim()) {
@@ -60,7 +62,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A valid category is required." }, { status: 400 });
   }
 
-  const slug = slugify(slugOverride?.trim() || title);
+  const slug = isEdit ? slugOverride?.trim() : slugify(slugOverride?.trim() || title);
   if (!slug) {
     return NextResponse.json({ error: "Couldn't derive a valid slug from that title." }, { status: 400 });
   }
@@ -70,7 +72,21 @@ export async function POST(request: Request) {
   const postPath = path.join(postsDir, `${slug}.mdx`);
   const coverPath = path.join(coversDir, `${slug}.svg`);
 
-  if (await fileExists(postPath)) {
+  const today = localDateString();
+  let publishDate = today;
+  let updatedDate: string | undefined;
+
+  if (isEdit) {
+    const existingPost = getAllPosts().find((p) => p.slug === slug);
+    if (!existingPost) {
+      return NextResponse.json(
+        { error: `No existing post found with slug "${slug}" to update.` },
+        { status: 404 }
+      );
+    }
+    publishDate = existingPost.date;
+    updatedDate = today;
+  } else if (await fileExists(postPath)) {
     return NextResponse.json(
       { error: `A post with the slug "${slug}" already exists. Try a different title or slug.` },
       { status: 409 }
@@ -81,27 +97,34 @@ export async function POST(request: Request) {
   await mkdir(coversDir, { recursive: true });
 
   const cleanTags = Array.isArray(tags) ? tags.map((t) => t.trim()).filter(Boolean) : [];
-  const date = localDateString();
   const coverImage = `/covers/${slug}.svg`;
 
-  const frontmatter = [
+  const frontmatterLines = [
     "---",
     `title: ${yamlString(title.trim())}`,
     `description: ${yamlString(description.trim())}`,
-    `date: ${yamlString(date)}`,
+    `date: ${yamlString(publishDate)}`,
+  ];
+  if (updatedDate) frontmatterLines.push(`updated: ${yamlString(updatedDate)}`);
+  frontmatterLines.push(
     `category: ${yamlString(category)}`,
     `tags: ${yamlStringArray(cleanTags)}`,
     `coverImage: ${yamlString(coverImage)}`,
     `featured: ${featured ? "true" : "false"}`,
     `draft: ${draft ? "true" : "false"}`,
     "---",
-    "",
-  ].join("\n");
+    ""
+  );
 
-  const fileContents = `${frontmatter}${content.trim()}\n`;
+  const fileContents = `${frontmatterLines.join("\n")}${content.trim()}\n`;
+  const writeFlag = isEdit ? undefined : "wx";
 
-  await writeFile(postPath, fileContents, { flag: "wx" });
-  await writeFile(coverPath, generatePostCoverSvg(title.trim(), category), { flag: "wx" });
+  await writeFile(postPath, fileContents, writeFlag ? { flag: writeFlag } : undefined);
+  await writeFile(
+    coverPath,
+    generatePostCoverSvg(title.trim(), category),
+    writeFlag ? { flag: writeFlag } : undefined
+  );
 
   // content-collections rebuilds its generated cache asynchronously off this file
   // change, and that rewrite isn't atomic — if a route compiles while it's still
@@ -112,12 +135,17 @@ export async function POST(request: Request) {
 
   // Include today's date explicitly — the in-process "content-collections" module
   // binding may not have picked up this write yet depending on webpack's own
-  // reload timing, and the streak must reflect the post we just saved regardless.
-  const postDates = [...getAllPosts().map((p) => p.date), date];
+  // reload timing, and the streak must reflect today's writing activity regardless
+  // (editing counts too — it's still writing).
+  const currentPosts = getAllPosts();
+  const postDates = [...currentPosts.map((p) => p.date), today];
   const streak = computeStreakStats(postDates);
+  // The injected "today" entry above is only a genuinely new post when creating —
+  // an edit overwrites a file already counted in currentPosts.
+  streak.totalPosts = currentPosts.length + (isEdit ? 0 : 1);
 
   return NextResponse.json(
-    { slug, coverImage, url: `/blog/${slug}`, streak },
-    { status: 201 }
+    { slug, coverImage, url: `/blog/${slug}`, streak, isEdit },
+    { status: isEdit ? 200 : 201 }
   );
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Laptop } from "lucide-react";
 import { PostEditor } from "@/components/write/post-editor";
-import { getAllPosts, getAllTags } from "@/lib/content";
+import { getAllPosts, getAllTags, toEditablePost } from "@/lib/content";
 import { computeStreakStats } from "@/lib/streaks";
 
 export const metadata: Metadata = {
@@ -30,6 +30,7 @@ export default function WritePage() {
 
   const allPosts = getAllPosts();
   const existingSlugs = allPosts.map((p) => p.slug);
+  const editablePosts = allPosts.map(toEditablePost);
   const tagSuggestions = getAllTags()
     .slice(0, 20)
     .map((t) => t.tag);
@@ -39,6 +40,7 @@ export default function WritePage() {
     <div className="container-premium py-10">
       <PostEditor
         existingSlugs={existingSlugs}
+        editablePosts={editablePosts}
         tagSuggestions={tagSuggestions}
         initialStreak={initialStreak}
       />
