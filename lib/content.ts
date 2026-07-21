@@ -13,6 +13,7 @@ export type EditablePost = {
   featured: boolean;
   draft: boolean;
   content: string;
+  coverImage: string;
 };
 
 export function toEditablePost(post: Post): EditablePost {
@@ -25,6 +26,7 @@ export function toEditablePost(post: Post): EditablePost {
     featured: post.featured,
     draft: post.draft,
     content: post.content,
+    coverImage: post.coverImage,
   };
 }
 

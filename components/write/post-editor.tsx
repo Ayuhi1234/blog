@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { CheckCircle2, ExternalLink, ImagePlus, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { CheckCircle2, ExternalLink, ImagePlus, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Input } from "@/components/ui/input";
@@ -64,8 +64,12 @@ export function PostEditor({
   const [uploadError, setUploadError] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverUploadError, setCoverUploadError] = useState("");
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
 
   const effectiveSlug = slugEdited ? slug : slugify(title);
   const slugCollision = !editingSlug && existingSlugs.includes(effectiveSlug);
@@ -98,8 +102,32 @@ export function PostEditor({
     setFeatured(post.featured);
     setDraft(post.draft);
     setContent(post.content);
+    setCoverImage(post.coverImage);
     setStatus("idle");
     setMessage("");
+  }
+
+  async function uploadCoverImage(file: File) {
+    setCoverUploadError("");
+    setCoverUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed.");
+      setCoverImage(data.path);
+    } catch (err) {
+      setCoverUploadError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setCoverUploading(false);
+    }
+  }
+
+  function handleCoverFileInputChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) uploadCoverImage(file);
+    e.target.value = "";
   }
 
   function insertAtCursor(insertText: string) {
@@ -176,6 +204,8 @@ export function PostEditor({
     setFeatured(false);
     setDraft(false);
     setContent(DEFAULT_CONTENT);
+    setCoverImage(null);
+    setCoverUploadError("");
     setStatus("idle");
     setMessage("");
     setResult(null);
@@ -211,6 +241,7 @@ export function PostEditor({
           draft,
           slug: effectiveSlug,
           isEdit: Boolean(editingSlug),
+          coverImage,
         }),
       });
       const data = await res.json();
@@ -419,6 +450,60 @@ export function PostEditor({
         <div className="flex items-center gap-3">
           <Switch checked={draft} onCheckedChange={setDraft} />
           <Label>Save as draft</Label>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-3xl border border-border bg-card p-6">
+        <Label className="mb-3 block">Cover Image</Label>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="relative aspect-video w-full max-w-xs shrink-0 overflow-hidden rounded-2xl border border-border bg-muted">
+            {coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverImage} alt="Cover preview" className="size-full object-cover" />
+            ) : (
+              <div className="flex size-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
+                Auto-generated gradient cover on save
+              </div>
+            )}
+          </div>
+          <div className="flex flex-1 flex-col gap-2">
+            <p className="text-sm text-muted-foreground">
+              Upload your own cover image, or leave it blank to use an auto-generated gradient cover.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => coverFileInputRef.current?.click()}
+                disabled={coverUploading}
+                className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
+              >
+                {coverUploading ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="size-3.5" />
+                )}
+                {coverUploading ? "Uploading…" : coverImage ? "Replace" : "Upload Cover"}
+              </button>
+              {coverImage && (
+                <button
+                  type="button"
+                  onClick={() => setCoverImage(null)}
+                  className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+                >
+                  <X className="size-3.5" />
+                  Remove
+                </button>
+              )}
+            </div>
+            {coverUploadError && <p className="text-xs text-destructive">{coverUploadError}</p>}
+            <input
+              ref={coverFileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+              onChange={handleCoverFileInputChange}
+              className="hidden"
+            />
+          </div>
         </div>
       </div>
 

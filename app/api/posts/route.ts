@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     draft = false,
     slug: slugOverride,
     isEdit = false,
+    coverImage: coverImageOverride,
   } = body as {
     title?: string;
     description?: string;
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
     draft?: boolean;
     slug?: string;
     isEdit?: boolean;
+    coverImage?: string;
   };
 
   if (!title?.trim() || !description?.trim() || !content?.trim()) {
@@ -94,10 +96,10 @@ export async function POST(request: Request) {
   }
 
   await mkdir(postsDir, { recursive: true });
-  await mkdir(coversDir, { recursive: true });
 
   const cleanTags = Array.isArray(tags) ? tags.map((t) => t.trim()).filter(Boolean) : [];
-  const coverImage = `/covers/${slug}.svg`;
+  const useCustomCover = Boolean(coverImageOverride?.trim());
+  const coverImage = useCustomCover ? coverImageOverride!.trim() : `/covers/${slug}.svg`;
 
   const frontmatterLines = [
     "---",
@@ -120,11 +122,15 @@ export async function POST(request: Request) {
   const writeFlag = isEdit ? undefined : "wx";
 
   await writeFile(postPath, fileContents, writeFlag ? { flag: writeFlag } : undefined);
-  await writeFile(
-    coverPath,
-    generatePostCoverSvg(title.trim(), category),
-    writeFlag ? { flag: writeFlag } : undefined
-  );
+
+  if (!useCustomCover) {
+    await mkdir(coversDir, { recursive: true });
+    await writeFile(
+      coverPath,
+      generatePostCoverSvg(title.trim(), category),
+      writeFlag ? { flag: writeFlag } : undefined
+    );
+  }
 
   // content-collections rebuilds its generated cache asynchronously off this file
   // change, and that rewrite isn't atomic — if a route compiles while it's still
