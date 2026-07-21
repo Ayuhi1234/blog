@@ -11,6 +11,7 @@ import { ShareButtons } from "@/components/blog/share-buttons";
 import { ReadingProgress } from "@/components/blog/reading-progress";
 import { RelatedPosts } from "@/components/blog/related-posts";
 import { PostNav } from "@/components/blog/post-nav";
+import { GiscusComments } from "@/components/blog/giscus-comments";
 import { mdxComponents } from "@/components/mdx/mdx-components";
 import { siteConfig } from "@/config/site";
 import { formatDateISO } from "@/lib/format";
@@ -158,6 +159,10 @@ export default async function BlogPostPage({
                 <p className="font-semibold">{siteConfig.author.name}</p>
                 <p className="text-sm text-muted-foreground">{siteConfig.author.role}</p>
               </div>
+            </div>
+
+            <div className="mt-12 border-t border-border pt-10">
+              <GiscusComments />
             </div>
           </div>
 
