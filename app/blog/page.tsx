@@ -4,11 +4,14 @@ import { BlogFilters } from "@/components/blog/blog-filters";
 import { PostCard, PostCardFeatured } from "@/components/blog/post-card";
 import { Pagination } from "@/components/blog/pagination";
 import { getAllPosts } from "@/lib/content";
+import { getDiscussionCountsByPathnames } from "@/lib/github-discussions";
 
 export const metadata: Metadata = {
   title: "Blog",
   description: "Software engineering, AI, startups, books, and everything in between.",
 };
+
+export const revalidate = 3600;
 
 const PER_PAGE = 9;
 
@@ -51,6 +54,11 @@ export default async function BlogPage({
     pagePosts = pagePosts.slice(1);
   }
 
+  const visiblePosts = featuredLead ? [featuredLead, ...pagePosts] : pagePosts;
+  const counts = await getDiscussionCountsByPathnames(
+    visiblePosts.map((post) => `/blog/${post.slug}`)
+  );
+
   return (
     <div className="container-premium py-16 sm:py-20">
       <div className="mb-10 max-w-2xl">
@@ -74,10 +82,12 @@ export default async function BlogPage({
         </div>
       ) : (
         <>
-          {featuredLead && <PostCardFeatured post={featuredLead} />}
+          {featuredLead && (
+            <PostCardFeatured post={featuredLead} counts={counts.get(`/blog/${featuredLead.slug}`)} />
+          )}
           <div className={featuredLead ? "mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-6 sm:grid-cols-2 lg:grid-cols-3"}>
             {pagePosts.map((post) => (
-              <PostCard key={post.slug} post={post} />
+              <PostCard key={post.slug} post={post} counts={counts.get(`/blog/${post.slug}`)} />
             ))}
           </div>
         </>

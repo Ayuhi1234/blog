@@ -1,18 +1,42 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Heart, MessageCircle } from "lucide-react";
 import { CategoryBadge } from "@/components/category-badge";
 import { PostMeta } from "@/components/blog/post-meta";
 import { cn } from "@/lib/utils";
 import type { Post } from "@/lib/content";
+import type { DiscussionCounts } from "@/lib/github-discussions";
+
+function DiscussionCountsRow({
+  counts,
+  className,
+}: {
+  counts?: DiscussionCounts;
+  className?: string;
+}) {
+  if (!counts) return null;
+  return (
+    <div className={cn("flex items-center gap-3 text-muted-foreground", className)}>
+      <span className="flex items-center gap-1">
+        <Heart size={14} /> {counts.reactions}
+      </span>
+      <span className="flex items-center gap-1">
+        <MessageCircle size={14} /> {counts.comments}
+      </span>
+    </div>
+  );
+}
 
 export function PostCard({
   post,
   className,
   priority = false,
+  counts,
 }: {
   post: Post;
   className?: string;
   priority?: boolean;
+  counts?: DiscussionCounts;
 }) {
   return (
     <article className={cn("card-hover group relative flex flex-col", className)}>
@@ -38,13 +62,20 @@ export function PostCard({
             {post.description}
           </p>
           <PostMeta date={post.date} readingTime={post.readingTime} className="mt-4" />
+          <DiscussionCountsRow counts={counts} className="mt-2 text-xs" />
         </div>
       </Link>
     </article>
   );
 }
 
-export function PostCardFeatured({ post }: { post: Post }) {
+export function PostCardFeatured({
+  post,
+  counts,
+}: {
+  post: Post;
+  counts?: DiscussionCounts;
+}) {
   return (
     <article className="card-hover group relative overflow-hidden rounded-3xl border border-border">
       <Link href={`/blog/${post.slug}`} className="grid lg:grid-cols-2">
@@ -72,6 +103,7 @@ export function PostCardFeatured({ post }: { post: Post }) {
             {post.description}
           </p>
           <PostMeta date={post.date} readingTime={post.readingTime} className="mt-6" size="md" />
+          <DiscussionCountsRow counts={counts} className="mt-3 text-sm" />
         </div>
       </Link>
     </article>

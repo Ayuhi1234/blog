@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Script from "next/script";
+import { Heart, MessageCircle } from "lucide-react";
 import { MDXContent } from "@content-collections/mdx/react";
 import { CategoryBadge } from "@/components/category-badge";
 import { PostMeta } from "@/components/blog/post-meta";
@@ -16,6 +17,9 @@ import { mdxComponents } from "@/components/mdx/mdx-components";
 import { siteConfig } from "@/config/site";
 import { formatDateISO } from "@/lib/format";
 import { getAllPosts, getPostBySlug, getRelatedPosts, getAdjacentPosts } from "@/lib/content";
+import { getDiscussionCount } from "@/lib/github-discussions";
+
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));
@@ -66,6 +70,7 @@ export default async function BlogPostPage({
   const related = getRelatedPosts(post, 3);
   const { prev, next } = getAdjacentPosts(post);
   const url = `${siteConfig.url}/blog/${post.slug}`;
+  const counts = await getDiscussionCount(`/blog/${post.slug}`);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -109,7 +114,17 @@ export default async function BlogPostPage({
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">{post.description}</p>
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4">
-            <PostMeta date={post.date} readingTime={post.readingTime} size="md" />
+            <div className="flex flex-wrap items-center gap-4">
+              <PostMeta date={post.date} readingTime={post.readingTime} size="md" />
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Heart size={14} /> {counts.reactions}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MessageCircle size={14} /> {counts.comments}
+                </span>
+              </div>
+            </div>
             <ShareButtons url={url} title={post.title} />
           </div>
         </div>
